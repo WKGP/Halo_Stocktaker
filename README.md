@@ -140,3 +140,30 @@ Reverse proxy: HAProxy → Express. The allowlist middleware trusts `X-Forwarded
 ## License
 
 Internal — Elliotts Tech.
+
+## Screenshots
+
+<img width="1220" height="736" alt="image" src="https://github.com/user-attachments/assets/14b6cfeb-8ae8-406b-8a71-836613c39d9b" />
+<img width="640" height="532" alt="image" src="https://github.com/user-attachments/assets/f806cf64-23bf-4d57-805b-a95210a0be50" />
+<img width="640" height="310" alt="image" src="https://github.com/user-attachments/assets/f21b07fd-4d77-42f1-9165-990b1462ab0a" />
+<img width="433" height="298" alt="image" src="https://github.com/user-attachments/assets/607b4223-e1d9-4e1e-a0b1-8b7d4c21b51f" />
+<img width="640" height="259" alt="image" src="https://github.com/user-attachments/assets/30495151-f019-4307-b4a8-f8b949762ccd" />
+<img width="640" height="589" alt="image" src="https://github.com/user-attachments/assets/f81174d3-ad4f-4f73-a2cf-09dfee4c9d32" />
+<img width="640" height="291" alt="image" src="https://github.com/user-attachments/assets/cf2720c9-be54-49ed-8c9e-211572994618" />
+<img width="640" height="571" alt="image" src="https://github.com/user-attachments/assets/2004df3e-8f43-414d-bca7-5bda3d0d0456" />
+<img width="640" height="571" alt="image" src="https://github.com/user-attachments/assets/e0a851ee-c144-4bbb-90b3-a3ca17830bba" />
+<img width="640" height="474" alt="image" src="https://github.com/user-attachments/assets/4ed4dbc9-a9eb-4e55-a299-9673535ed1cc" />
+<img width="640" height="643" alt="image" src="https://github.com/user-attachments/assets/10599721-22d9-4d46-b70a-88e20fe30fb4" />
+
+
+
+
+
+
+
+
+
+
+
+
+
