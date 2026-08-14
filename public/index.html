@@ -236,6 +236,10 @@
         .po-result:hover {
             background: #edf2f7;
         }
+        .po-result.kb-active {
+            background: #bee3f8;
+            border-color: #90cdf4;
+        }
 
         .label-modes {
             display: flex;
@@ -1174,7 +1178,12 @@
             try {
                 const data = await apiCall('/api/products');
                 productList = data.products || [];
-                hint.textContent = `${productList.length} products loaded. Start typing to filter.`;
+                hint.textContent = `${productList.length} products loaded. Click the field or start typing.`;
+                // If the user already clicked into the search box while loading, fill it now.
+                const input = document.getElementById('productSearchInput');
+                if (input && document.activeElement === input) {
+                    renderProductSuggestions(filterProducts(input.value));
+                }
             } catch (err) {
                 hint.textContent = 'Failed to load product list: ' + err.message;
             } finally {
@@ -1182,15 +1191,17 @@
             }
         }
 
+        const PRODUCT_SUGGESTION_LIMIT = 50;
+
         function filterProducts(q) {
             if (!productList) return [];
             const term = q.toLowerCase().trim();
-            if (!term) return [];
             const matches = [];
             for (const p of productList) {
-                if ((p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
+                // Empty term => show a browsable default list (first N products).
+                if (!term || (p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
                     matches.push(p);
-                    if (matches.length >= 20) break;
+                    if (matches.length >= PRODUCT_SUGGESTION_LIMIT) break;
                 }
             }
             return matches;
@@ -1198,13 +1209,61 @@
 
         function renderProductSuggestions(matches) {
             const el = document.getElementById('productSuggestions');
-            if (matches.length === 0) { el.innerHTML = ''; return; }
-            el.innerHTML = matches.map(p => `
-                <div class="po-result" onclick="selectProduct(${p.id})">
+            if (!productList) {
+                el.innerHTML = productListLoading
+                    ? '<div class="po-result muted" style="cursor:default;">Loading products…</div>'
+                    : '';
+                return;
+            }
+            if (!matches || matches.length === 0) {
+                el.innerHTML = '<div class="po-result muted" style="cursor:default;">No products match.</div>';
+                return;
+            }
+            let html = matches.map(p => `
+                <div class="po-result sugg-item" data-id="${p.id}" onclick="selectProduct(${p.id})">
                     <strong>${escapeHtml(p.name || '')}</strong>
                     <span class="muted"> — ID ${p.id} • stock: ${p.stock}${p.serialised ? ' (serialised)' : ''}</span>
                 </div>
             `).join('');
+            if (productList.length > matches.length) {
+                html += `<div class="po-result muted" style="cursor:default;font-size:0.85em;">Showing ${matches.length} of ${productList.length} — keep typing to narrow…</div>`;
+            }
+            el.innerHTML = html;
+            productActiveIndex = -1; // reset keyboard highlight on every re-render
+        }
+
+        // ---- Keyboard navigation for the Labels product search ----
+        let productActiveIndex = -1;
+
+        function productSuggItems() {
+            return Array.from(document.querySelectorAll('#productSuggestions .sugg-item'));
+        }
+
+        function highlightProductItem(idx) {
+            const items = productSuggItems();
+            if (!items.length) return;
+            productActiveIndex = (idx + items.length) % items.length; // wrap around
+            items.forEach((el, i) => el.classList.toggle('kb-active', i === productActiveIndex));
+            items[productActiveIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        function handleProductSearchKeydown(e) {
+            const items = productSuggItems();
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!items.length) { openProductSuggestions(e.target); return; }
+                highlightProductItem(productActiveIndex + 1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (items.length) highlightProductItem(productActiveIndex - 1);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const target = items[productActiveIndex] || items[0];
+                if (target) selectProduct(parseInt(target.dataset.id, 10));
+            } else if (e.key === 'Escape') {
+                document.getElementById('productSuggestions').innerHTML = '';
+                productActiveIndex = -1;
+            }
         }
 
         async function selectProduct(itemId) {
@@ -1447,15 +1506,38 @@
             else if (id === 'assetSearchInput') { e.preventDefault(); searchAsset(); }
         });
 
+        function openProductSuggestions(input) {
+            if (!productList && !productListLoading) loadProductList();
+            renderProductSuggestions(filterProducts(input.value));
+        }
+
         document.addEventListener('input', e => {
             if (e.target.id === 'productSearchInput') {
                 renderProductSuggestions(filterProducts(e.target.value));
             }
         });
 
+        // Open the list as soon as the field is focused (via Tab) ...
+        document.addEventListener('focusin', e => {
+            if (e.target.id === 'productSearchInput') openProductSuggestions(e.target);
+        });
+
+        // Arrow/Enter/Escape navigation for the Labels product search.
+        document.addEventListener('keydown', e => {
+            if (e.target.id === 'productSearchInput') handleProductSearchKeydown(e);
+        });
+
         document.addEventListener('click', e => {
-            if (e.target.id !== 'productSearchInput' && !e.target.closest('#productSuggestions')) {
+            // ... or clicked (re-opens after a prior selection cleared it).
+            if (e.target.id === 'productSearchInput') {
+                openProductSuggestions(e.target);
+            } else if (!e.target.closest('#productSuggestions')) {
                 document.getElementById('productSuggestions').innerHTML = '';
+            }
+            // Stocktake product search: close when clicking outside its field/list.
+            if (e.target.id !== 'stocktakeProductSearch' && !e.target.closest('#stocktakeProductSuggestions')) {
+                const el = document.getElementById('stocktakeProductSuggestions');
+                if (el) el.innerHTML = '';
             }
         });
 
@@ -1844,9 +1926,11 @@
                 <!-- Edit Mode: Add Items Panel -->
                 <div id="editAddPanel" style="${editMode ? '' : 'display: none;'} margin-bottom: 15px; background: white; border-radius: 8px; border: 2px dashed #38b2ac; padding: 15px;">
                     <div style="font-weight: 600; margin-bottom: 8px;">➕ Add Item from Halo</div>
-                    <input type="text" id="stocktakeProductSearch" placeholder="Type product name to search..." autocomplete="off"
+                    <input type="text" id="stocktakeProductSearch" placeholder="Click or type to search products..." autocomplete="off"
                         style="width: 100%; padding: 10px; font-size: 14px; border: 2px solid #e2e8f0; border-radius: 6px;"
-                        oninput="renderStocktakeProductSuggestions(this.value)">
+                        oninput="renderStocktakeProductSuggestions(this.value)"
+                        onfocus="openStocktakeProductSuggestions()"
+                        onclick="openStocktakeProductSuggestions()">
                     <div id="stocktakeProductSuggestions" class="autocomplete-list"></div>
                     <div style="font-size: 0.8em; color: #666; margin-top: 6px;">${stocktakeProductList ? stocktakeProductList.length + ' products loaded' : 'Loading product list...'}</div>
                 </div>
@@ -2331,6 +2415,11 @@
                 stocktakeProductList = data.products || [];
                 const hint = document.querySelector('#editAddPanel div[style*="font-size: 0.8em"]');
                 if (hint) hint.textContent = stocktakeProductList.length + ' products loaded';
+                // If the user already clicked into the search box while loading, fill it now.
+                const input = document.getElementById('stocktakeProductSearch');
+                if (input && document.activeElement === input) {
+                    renderStocktakeProductSuggestions(input.value);
+                }
             } catch (e) {
                 console.error('Failed to load product list', e);
             }
@@ -2340,25 +2429,40 @@
             const el = document.getElementById('stocktakeProductSuggestions');
             if (!el) return;
             const term = (q || '').toLowerCase().trim();
-            if (!term || !stocktakeProductList) { el.innerHTML = ''; return; }
+            if (!stocktakeProductList) {
+                el.innerHTML = '<div class="muted" style="padding:6px;">Loading products…</div>';
+                return;
+            }
             const existing = new Set((currentStocktakeInView?.haloData?.items || []).map(i => i.id));
             const matches = [];
             for (const p of stocktakeProductList) {
-                if ((p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
+                // Empty term => show a browsable default list (first N products).
+                if (!term || (p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
                     matches.push(p);
-                    if (matches.length >= 20) break;
+                    if (matches.length >= PRODUCT_SUGGESTION_LIMIT) break;
                 }
             }
             if (matches.length === 0) {
                 el.innerHTML = '<div class="muted" style="padding:6px;">No matches</div>';
                 return;
             }
-            el.innerHTML = matches.map(p => `
+            let html = matches.map(p => `
                 <div class="po-result" onclick="addItemToStocktakeUI(${p.id})">
                     <strong>${escapeHtml(p.name || '')}</strong>
                     <span class="muted"> — ID ${p.id} • stock: ${p.stock}${existing.has(p.id) ? ' • ⚠️ already in stocktake' : ''}</span>
                 </div>
             `).join('');
+            if (stocktakeProductList.length > matches.length) {
+                html += `<div class="po-result muted" style="cursor:default;font-size:0.85em;">Showing ${matches.length} of ${stocktakeProductList.length} — keep typing to narrow…</div>`;
+            }
+            el.innerHTML = html;
+        }
+
+        // Open the stocktake product list on click/focus (mirrors the Labels search).
+        function openStocktakeProductSuggestions() {
+            if (!stocktakeProductList) { loadStocktakeProductList(); }
+            const input = document.getElementById('stocktakeProductSearch');
+            if (input) renderStocktakeProductSuggestions(input.value);
         }
 
         async function addItemToStocktakeUI(itemId) {
