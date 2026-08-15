@@ -1,0 +1,302 @@
+/*
+ * Cached Up theme for the Stocktake tool.
+ *
+ * Purely additive. Loaded AFTER the inline <style> block so equal-specificity
+ * rules win on cascade order. Nothing in index.html's own CSS is edited, so
+ * removing the <link> restores the original appearance exactly.
+ *
+ * The palette and type scale are the same tokens the counter till uses, so the
+ * two read as one product when the till frames this in a tab.
+ */
+
+:root {
+  --ground: #eef0f4;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --raise: 0 1px 2px rgba(13, 21, 34, .06), 0 4px 14px rgba(13, 21, 34, .05);
+  --raise-lg: 0 2px 6px rgba(13, 21, 34, .08), 0 18px 40px rgba(13, 21, 34, .1);
+  --ink: #10151c;
+  --ink-2: #46505e;
+  --ink-3: #77808f;
+  --line: #dfe3ea;
+  --line-2: #eceff4;
+  --brand: #0a6b4f;
+  --brand-ink: #ffffff;
+  --brand-soft: #e4f2ec;
+  --warn: #9a5b00;
+  --warn-soft: #fdf0d9;
+  --stop: #a32020;
+  --stop-soft: #fbe9e9;
+  --r: 12px;
+  --r-sm: 9px;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0c1015;
+    --surface: #161b22;
+    --surface-2: #1c222b;
+    --raise: 0 1px 2px rgba(0, 0, 0, .5);
+    --raise-lg: 0 2px 6px rgba(0, 0, 0, .5), 0 18px 40px rgba(0, 0, 0, .45);
+    --ink: #f2f5f9;
+    --ink-2: #aab4c2;
+    --ink-3: #7c8797;
+    --line: #2a323d;
+    --line-2: #222932;
+    --brand: #3ec18f;
+    --brand-ink: #06251b;
+    --brand-soft: #16302a;
+    --warn: #e0a44a;
+    --warn-soft: #33280f;
+    --stop: #f08b85;
+    --stop-soft: #351a1a;
+  }
+}
+
+/* ---------- ground ---------- */
+
+body {
+  background: var(--ground) !important;
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 1240px; }
+
+/* The original header is a purple-blue gradient. Flat surface instead — it is
+   the single loudest thing on the page and the reason it reads as a different
+   product to the till. */
+.header {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--raise);
+}
+.header h1, .header h2, .header p { color: var(--ink) !important; }
+.header p, .header .subtitle { color: var(--ink-2) !important; }
+
+h1, h2, h3, h4 { color: var(--ink); letter-spacing: -.02em; }
+
+/* ---------- surfaces ---------- */
+
+.card, .stat-box, .po-result, .quantity-input-modal, .tab-content {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--raise);
+  color: var(--ink);
+}
+
+.stat-box { text-align: left; }
+.stat-box strong, .stat-box b { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+/* ---------- buttons ---------- */
+
+.button, button, .label-mode-btn {
+  font-family: var(--sans);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+  min-height: 40px;
+  transition: none;
+}
+.button:hover, button:hover { border-color: var(--ink-3); }
+
+/* Primary and destructive keep their meaning, in the till's palette. */
+.button.primary, button.primary, .button-primary,
+.button[style*="667eea"], .label-mode-btn.active {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand-ink) !important;
+}
+.button.danger, button.danger, .button-danger {
+  background: var(--stop-soft) !important;
+  border-color: var(--stop) !important;
+  color: var(--stop) !important;
+}
+.button.success, button.success {
+  background: var(--brand-soft) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+}
+
+@media (pointer: coarse) { .button, button { min-height: 44px; } }
+
+/* ---------- inputs ---------- */
+
+input, select, textarea, .reason-input, .serial-checkbox + label {
+  font-family: var(--sans);
+  /* 16px or iOS zooms the viewport on focus. */
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2.5px solid var(--brand);
+  outline-offset: 1px;
+  border-color: var(--brand);
+}
+.input-group label { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+
+/* ---------- tables ---------- */
+
+.report-table, .inventory-table, .review-table, .labels-table, .report-summary-table, table {
+  background: var(--surface);
+  border-radius: var(--r);
+  overflow: hidden;
+  border-collapse: collapse;
+}
+
+table th {
+  background: var(--surface-2) !important;
+  color: var(--ink-3) !important;
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line) !important;
+  text-align: left;
+}
+
+table td {
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-2) !important;
+}
+
+/* Counts, variances and money line up in columns and must not jitter. */
+table td:has(> .variance-value), .variance-value, .serial-number,
+td.num, .quantity-input-content input { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.item-row:hover, .stocktake-item:hover, .dropdown-item:hover { background: var(--surface-2); }
+
+/* ---------- status, badges, alerts ---------- */
+
+.badge, .status, .serial-badge, .serial-status {
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 3px 8px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  border: none;
+}
+
+.alert {
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.alert-success, .alert.success { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.alert-warning, .alert.warning { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.alert-danger, .alert.danger, .alert-error { background: var(--stop-soft); border-color: var(--stop); color: var(--stop); }
+
+/* Variance is the number people actually read on this page. Negative is a
+   shortfall and must be unmissable; positive is fine but not celebratory. */
+.variance-value.negative, .variance-value[data-negative="true"] { color: var(--stop); font-weight: 700; }
+.variance-value.positive { color: var(--brand); }
+
+/* ---------- tabs ---------- */
+
+.tabs { border-bottom: 1px solid var(--line); gap: 4px; }
+.tab {
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  color: var(--ink-2);
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-bottom: none;
+}
+.tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+/* ---------- framed inside the till ---------- */
+
+/* When embedded in the till's Stocktake tab the page supplies its own chrome
+   already, so drop the outer margin that assumes a standalone browser window. */
+@media (display-mode: browser) {
+  body { margin: 0; }
+}
+
+/* ==========================================================================
+   Embedded in the Cached Up till
+   ==========================================================================
+   The host already supplies a header, an entity badge and a tab telling the
+   operator where they are. Repeating that inside the frame is what makes an
+   embed read as a website in a box rather than part of the application.
+   `.is-embedded` is set by a one-line script in index.html when the page is
+   not the top window. */
+
+.is-embedded body { margin: 0; background: var(--ground) !important; }
+
+/* The tool's own title card duplicates the tab that got you here. */
+.is-embedded .header { display: none !important; }
+
+.is-embedded .container {
+  max-width: none;
+  padding: 16px 18px 28px;
+  margin: 0;
+}
+
+/* Their tab strip becomes the same segmented control the till uses, so moving
+   between the two does not feel like crossing a border. */
+.is-embedded .tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: var(--surface-2);
+  margin-bottom: 16px;
+}
+
+.is-embedded .tab {
+  border: none !important;
+  border-radius: 100px !important;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  min-height: 36px;
+}
+
+.is-embedded .tab.active {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  box-shadow: var(--raise);
+}
+
+/* A card inside a panel that is itself a card gives a doubled border. */
+.is-embedded .tab-content {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Headings inside the frame are section labels, not page titles. */
+.is-embedded .tab-content > .card > h2,
+.is-embedded .tab-content h2 {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+@media (pointer: coarse) { .is-embedded .tab { min-height: 44px; padding: 10px 18px; } }
+
+/* The host now renders these sections in its own chrome, so the tool's own
+   tab strip would be a duplicate menu two rows below the real one. */
+.is-embedded .tabs { display: none !important; }

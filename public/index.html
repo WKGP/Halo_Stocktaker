@@ -836,6 +836,13 @@
             color: #721c24;
         }
     </style>
+    <!-- Cached Up theme. Additive override, loaded after the inline styles.
+         Remove this one line to restore the original appearance. -->
+    <link rel="stylesheet" href="cachedup-theme.css">
+    <script>/* cachedup-embed-detect */
+      // Lets the Cached Up theme drop chrome the host already provides.
+      if (window.top !== window.self) document.documentElement.classList.add("is-embedded");
+    </script>
 </head>
 <body>
     <div class="container">
@@ -1199,7 +1206,16 @@
             const matches = [];
             for (const p of productList) {
                 // Empty term => show a browsable default list (first N products).
-                if (!term || (p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
+                // Codes are matched as well as names: product names are often
+                // truncated in Halo, so the code a person reads off a box or a
+                // supplier invoice may not appear in the name at all.
+                const code = (p.sku || '').toLowerCase();
+                const altCode = (p.altSku || '').toLowerCase();
+                if (!term
+                    || (p.name && p.name.toLowerCase().includes(term))
+                    || String(p.id) === term
+                    || (code && code.includes(term))
+                    || (altCode && altCode.includes(term))) {
                     matches.push(p);
                     if (matches.length >= PRODUCT_SUGGESTION_LIMIT) break;
                 }
@@ -2437,7 +2453,16 @@
             const matches = [];
             for (const p of stocktakeProductList) {
                 // Empty term => show a browsable default list (first N products).
-                if (!term || (p.name && p.name.toLowerCase().includes(term)) || String(p.id) === term) {
+                // Codes are matched as well as names: product names are often
+                // truncated in Halo, so the code a person reads off a box or a
+                // supplier invoice may not appear in the name at all.
+                const code = (p.sku || '').toLowerCase();
+                const altCode = (p.altSku || '').toLowerCase();
+                if (!term
+                    || (p.name && p.name.toLowerCase().includes(term))
+                    || String(p.id) === term
+                    || (code && code.includes(term))
+                    || (altCode && altCode.includes(term))) {
                     matches.push(p);
                     if (matches.length >= PRODUCT_SUGGESTION_LIMIT) break;
                 }
