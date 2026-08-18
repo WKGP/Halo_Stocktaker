@@ -1018,9 +1018,33 @@
                         <tbody id="labelsTableBody"></tbody>
                     </table>
 
-                    <div style="margin-top:16px; display:flex; gap:10px; align-items:center;">
-                        <button class="button" onclick="generateLabelsPDF()" id="generateLabelsBtn">Generate Labels PDF</button>
+                    <div style="margin-top:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button class="button primary" onclick="addSelectionToQueue()" id="addToQueueBtn">Add to queue</button>
+                        <button class="button" onclick="generateLabelsPDF()" id="generateLabelsBtn">Print these now</button>
                         <span id="labelCountSummary" class="muted"></span>
+                    </div>
+                </div>
+
+                <!-- The queue. Survives a lookup, a tab change and a reload, so
+                     a shelf can be walked once and printed once. -->
+                <div id="labelQueuePanel" class="hidden" style="margin-top:22px;">
+                    <h3 style="margin:0 0 8px;">🖨️ Print queue <span id="labelQueueCount" class="muted"></span></h3>
+                    <table class="labels-table" id="labelQueueTable">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Barcode</th>
+                                <th>Price</th>
+                                <th style="width:90px;">Labels</th>
+                                <th style="width:40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="labelQueueBody"></tbody>
+                    </table>
+                    <div style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button class="button primary" onclick="generateQueuePDF()" id="printQueueBtn">Print queue</button>
+                        <button class="button danger" onclick="clearLabelQueue()">Clear queue</button>
+                        <span id="labelQueueSummary" class="muted"></span>
                     </div>
                 </div>
             </div>
@@ -1318,7 +1342,8 @@
                         sku: data.sku,
                         item_id: data.item_id,
                         instances: data.instances,
-                        labels: data.labels
+                        labels: data.labels,
+                        defaultLabel: data.defaultLabel
                     }]
                 };
                 renderLabelsTable();
@@ -1443,6 +1468,14 @@
                     bcSource = 'Item ID ' + line.item_id;
                 }
                 const qtyCell = line.qty_received !== undefined ? line.qty_received : (line.instances ? line.instances.length : '-');
+                /* How many labels to print, as a number you can change.
+                 *
+                 * This used to be line.labels.length, which is one per unit in
+                 * stock — so a product with none showed 0 and the Generate
+                 * button did nothing however many boxes you ticked. A shelf
+                 * label is most wanted for stock that has not arrived yet, so
+                 * the count starts at what is on hand and falls back to 1. */
+                if (line.labelQty === undefined) line.labelQty = line.labels.length || 1;
                 return `
                     <tr>
                         <td><input type="checkbox" class="po-line-check" data-line-idx="${idx}" checked onchange="updateLabelSummary()"></td>
@@ -1450,12 +1483,44 @@
                         <td>${qtyCell}</td>
                         <td>${bcSource}</td>
                         <td>$${Number(line.sell_price || 0).toFixed(2)}</td>
-                        <td>${line.labels.length}</td>
+                        <td><input type="number" class="label-qty" min="0" max="99" value="${line.labelQty}"
+                                   data-line-idx="${idx}" onchange="setLabelQty(${idx}, this.value)"
+                                   style="width:56px; text-align:center; font-size:14px;"></td>
                     </tr>
                 `;
             }).join('');
             document.getElementById('poSelectAll').checked = true;
             updateLabelSummary();
+        }
+
+        function setLabelQty(idx, value) {
+            if (!currentSource || !currentSource.lines[idx]) return;
+            const n = Math.max(0, Math.min(99, parseInt(value, 10) || 0));
+            currentSource.lines[idx].labelQty = n;
+            updateLabelSummary();
+        }
+
+        /**
+         * Expand a line into the individual labels the PDF wants.
+         *
+         * A serialised product carries one barcode per asset, so the first
+         * labelQty of those are used and each is distinct. Everything else
+         * repeats one barcode, which is why asking for more than there are in
+         * stock is meaningful at all.
+         */
+        function labelsForLine(line) {
+            const want = line.labelQty === undefined ? line.labels.length : line.labelQty;
+            const base = {
+                name: line.name, description: line.description, price: line.sell_price,
+                sku: line.sku, item_id: line.item_id
+            };
+            const out = [];
+            for (let i = 0; i < want; i++) {
+                const bc = line.labels[i] || line.labels[0] || line.defaultLabel;
+                if (!bc) break;   // nothing to encode; skip rather than print a blank
+                out.push({ ...base, barcode_type: bc.barcode_type, barcode_value: bc.barcode_value });
+            }
+            return out;
         }
 
         function toggleAllLabels(master) {
@@ -1477,48 +1542,191 @@
             document.getElementById('labelCountSummary').textContent = total + ' label(s) selected';
         }
 
-        async function generateLabelsPDF() {
-            if (!currentSource) return alert('Load a source first');
-            const selected = [];
-            document.querySelectorAll('.po-line-check').forEach(c => {
-                if (c.checked) {
-                    const idx = parseInt(c.dataset.lineIdx, 10);
-                    const line = currentSource.lines[idx];
-                    for (const label of line.labels) {
-                        selected.push({
-                            name: line.name,
-                            description: line.description,
-                            price: line.sell_price,
-                            sku: line.sku,
-                            item_id: line.item_id,
-                            barcode_type: label.barcode_type,
-                            barcode_value: label.barcode_value
-                        });
-                    }
-                }
-            });
-            if (selected.length === 0) return alert('Select at least one line');
+        /* ─── print queue ──────────────────────────────────────────────────
+         *
+         * Every lookup replaced currentSource, so labelling ten products meant
+         * ten searches and ten PDFs — and ten trips to the printer. The queue
+         * accumulates across lookups and across all three modes, so a shelf can
+         * be walked once and printed once.
+         *
+         * Held in localStorage rather than memory: the tool lives in an iframe
+         * in the till, and switching tabs or reloading would otherwise lose a
+         * queue somebody spent ten minutes building. */
+        const LABEL_QUEUE_KEY = 'stocktake.labelQueue';
+        let labelQueue = [];
 
-            const btn = document.getElementById('generateLabelsBtn');
+        function loadLabelQueue() {
+            try {
+                const raw = localStorage.getItem(LABEL_QUEUE_KEY);
+                labelQueue = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(labelQueue)) labelQueue = [];
+            } catch { labelQueue = []; }
+            renderLabelQueue();
+        }
+
+        function saveLabelQueue() {
+            try {
+                localStorage.setItem(LABEL_QUEUE_KEY, JSON.stringify(labelQueue));
+            } catch {
+                // Private mode or full. The queue still works for this session;
+                // it just will not survive a reload, so say so rather than
+                // letting someone discover it the hard way.
+                setLabelQueueNote('Queue could not be saved on this device — it will be lost if you reload.');
+            }
+        }
+
+        function setLabelQueueNote(msg) {
+            const el = document.getElementById('labelQueueSummary');
+            if (el) el.textContent = msg;
+        }
+
+        /** Same product from the same source is one row with a bigger count. */
+        function queueKey(line) {
+            const bc = (line.labels && line.labels[0]) || line.defaultLabel || {};
+            return [line.item_id, bc.barcode_type, bc.barcode_value].join('|');
+        }
+
+        function addSelectionToQueue() {
+            if (!currentSource) return alert('Load a product or purchase order first');
+            const checks = document.querySelectorAll('.po-line-check');
+            let added = 0, skipped = 0;
+
+            checks.forEach(c => {
+                if (!c.checked) return;
+                const line = currentSource.lines[parseInt(c.dataset.lineIdx, 10)];
+                const labels = labelsForLine(line);
+                if (labels.length === 0) { skipped++; return; }
+
+                const key = queueKey(line);
+                const existing = labelQueue.find(q => q.key === key);
+                if (existing) {
+                    existing.labels = existing.labels.concat(labels);
+                } else {
+                    labelQueue.push({
+                        key,
+                        name: line.name,
+                        description: line.description,
+                        price: line.sell_price,
+                        item_id: line.item_id,
+                        barcode: (labels[0] || {}).barcode_value,
+                        labels
+                    });
+                }
+                added += labels.length;
+            });
+
+            saveLabelQueue();
+            renderLabelQueue();
+            setLabelQueueNote(
+                `Added ${added} label${added === 1 ? '' : 's'}.` +
+                (skipped ? ` ${skipped} line${skipped === 1 ? '' : 's'} had no barcode and were skipped.` : '')
+            );
+        }
+
+        function removeFromQueue(key) {
+            labelQueue = labelQueue.filter(q => q.key !== key);
+            saveLabelQueue();
+            renderLabelQueue();
+        }
+
+        function setQueueQty(key, value) {
+            const row = labelQueue.find(q => q.key === key);
+            if (!row) return;
+            const want = Math.max(0, Math.min(99, parseInt(value, 10) || 0));
+            if (want === 0) return removeFromQueue(key);
+            const have = row.labels.length;
+            if (want < have) {
+                row.labels = row.labels.slice(0, want);
+            } else {
+                // Repeat the last barcode. For a serialised product the earlier
+                // entries stay distinct per asset; only the padding repeats.
+                const last = row.labels[have - 1];
+                for (let i = have; i < want; i++) row.labels.push({ ...last });
+            }
+            saveLabelQueue();
+            renderLabelQueue();
+        }
+
+        function clearLabelQueue() {
+            if (labelQueue.length && !confirm(`Clear all ${queueTotal()} queued label(s)?`)) return;
+            labelQueue = [];
+            saveLabelQueue();
+            renderLabelQueue();
+        }
+
+        function queueTotal() {
+            return labelQueue.reduce((n, q) => n + q.labels.length, 0);
+        }
+
+        function renderLabelQueue() {
+            const panel = document.getElementById('labelQueuePanel');
+            if (!panel) return;
+            if (labelQueue.length === 0) { panel.classList.add('hidden'); return; }
+            panel.classList.remove('hidden');
+
+            document.getElementById('labelQueueBody').innerHTML = labelQueue.map(q => `
+                <tr>
+                    <td><strong>${escapeHtml(q.name || '')}</strong></td>
+                    <td>${escapeHtml(q.barcode || '')}</td>
+                    <td>$${Number(q.price || 0).toFixed(2)}</td>
+                    <td><input type="number" min="0" max="99" value="${q.labels.length}"
+                               onchange="setQueueQty('${q.key.replace(/'/g, "\\'")}', this.value)"
+                               style="width:56px; text-align:center; font-size:14px;"></td>
+                    <td><button class="button danger" style="padding:2px 8px; min-height:0;"
+                                onclick="removeFromQueue('${q.key.replace(/'/g, "\\'")}')"
+                                aria-label="Remove">✕</button></td>
+                </tr>
+            `).join('');
+
+            const total = queueTotal();
+            document.getElementById('labelQueueCount').textContent =
+                `— ${labelQueue.length} product${labelQueue.length === 1 ? '' : 's'}, ${total} label${total === 1 ? '' : 's'}`;
+        }
+
+        /** Send a set of labels to the PDF endpoint and open the result. */
+        async function sendLabels(labels, btnId, busyText, idleText) {
+            if (labels.length === 0) return alert('Nothing to print');
+            const btn = document.getElementById(btnId);
             btn.disabled = true;
-            btn.textContent = 'Generating...';
+            btn.textContent = busyText;
             try {
                 const resp = await fetch('/api/labels/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ labels: selected })
+                    body: JSON.stringify({ labels })
                 });
                 if (!resp.ok) throw new Error('Generation failed: ' + resp.status);
                 const blob = await resp.blob();
                 const url = URL.createObjectURL(blob);
                 window.open(url, '_blank');
                 setTimeout(() => URL.revokeObjectURL(url), 60000);
+                return true;
             } catch (err) {
                 alert('Failed: ' + err.message);
+                return false;
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Generate Labels PDF';
+                btn.textContent = idleText;
             }
+        }
+
+        async function generateLabelsPDF() {
+            if (!currentSource) return alert('Load a source first');
+            const selected = [];
+            document.querySelectorAll('.po-line-check').forEach(c => {
+                if (c.checked) selected.push(...labelsForLine(currentSource.lines[parseInt(c.dataset.lineIdx, 10)]));
+            });
+            if (selected.length === 0) return alert('Select at least one line, with a label count above zero');
+            await sendLabels(selected, 'generateLabelsBtn', 'Generating...', 'Print these now');
+        }
+
+        async function generateQueuePDF() {
+            const all = labelQueue.flatMap(q => q.labels);
+            const ok = await sendLabels(all, 'printQueueBtn', 'Generating...', 'Print queue');
+            // The queue is deliberately NOT cleared on success. A print can jam,
+            // come out crooked, or go to the wrong printer, and losing the list
+            // at that moment means building it again from scratch.
+            if (ok) setLabelQueueNote(`Sent ${all.length} label(s). Queue kept — clear it when the print looks right.`);
         }
 
         function escapeHtml(s) {
@@ -4261,6 +4469,9 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboard();
+            // Bring back any queue left from a previous session before the
+            // operator has a chance to start building a second one.
+            loadLabelQueue();
         });
     </script>
 </body>
