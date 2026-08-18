@@ -9,49 +9,156 @@
  * two read as one product when the till frames this in a tab.
  */
 
+/* ─── palettes ──────────────────────────────────────────────────────────────
+   Default (no stamp, or data-theme="default") is the purple-slate the product
+   was designed in — the same default the till has. */
+
 :root {
+  --ground: #4a4a68;
+  --surface: #545474;
+  --surface-2: #4f4f6d;
+  --ink: #ffffff;
+  --ink-2: #cfcfdd;
+  --ink-3: #a6a6bd;
+  --line: rgba(255, 255, 255, .17);
+  --line-2: rgba(255, 255, 255, .09);
+  --raise: 0 1px 2px rgba(0, 0, 0, .18), 0 4px 14px rgba(0, 0, 0, .16);
+  --raise-lg: 0 2px 6px rgba(0, 0, 0, .24), 0 18px 40px rgba(0, 0, 0, .3);
+
+  /* Amber is the action, and only the action. */
+  --brand: #f7b731;
+  --brand-ink: #3a2c05;
+  --brand-soft: rgba(247, 183, 49, .17);
+  /* Teal is state — connected, in stock. Never an action. */
+  --live: #4fd1c5;
+  --live-soft: rgba(79, 209, 197, .16);
+  --warn: #ffc247;
+  --warn-soft: rgba(255, 194, 71, .16);
+  --stop: #ff8a70;
+  --stop-soft: rgba(255, 122, 92, .17);
+
+  /* Product photographs are shot on white. They get a light well in every
+     palette rather than being cut out against a dark panel. */
+  --well: #f4f4f8;
+
+  --r: 12px;
+  --r-sm: 9px;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] {
+  --ground: #2f2f45;
+  --surface: #3a3a54;
+  --surface-2: #35354e;
+  --ink: #ffffff;
+  --ink-2: #c3c3d4;
+  --ink-3: #9a9ab2;
+  --line: rgba(255, 255, 255, .16);
+  --line-2: rgba(255, 255, 255, .08);
+  --raise: 0 1px 2px rgba(0, 0, 0, .35), 0 4px 14px rgba(0, 0, 0, .28);
+  --raise-lg: 0 2px 6px rgba(0, 0, 0, .45), 0 18px 40px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
   --ground: #eef0f4;
   --surface: #ffffff;
-  --surface-2: #f7f8fa;
-  --raise: 0 1px 2px rgba(13, 21, 34, .06), 0 4px 14px rgba(13, 21, 34, .05);
-  --raise-lg: 0 2px 6px rgba(13, 21, 34, .08), 0 18px 40px rgba(13, 21, 34, .1);
+  --surface-2: #f6f7fa;
   --ink: #10151c;
   --ink-2: #46505e;
   --ink-3: #77808f;
   --line: #dfe3ea;
   --line-2: #eceff4;
-  --brand: #0a6b4f;
-  --brand-ink: #ffffff;
-  --brand-soft: #e4f2ec;
+  --raise: 0 1px 2px rgba(13, 21, 34, .06), 0 4px 14px rgba(13, 21, 34, .05);
+  --raise-lg: 0 2px 6px rgba(13, 21, 34, .08), 0 18px 40px rgba(13, 21, 34, .1);
+  --brand: #f0a500;
+  --brand-ink: #2b2000;
+  --brand-soft: #fdf1d6;
+  --live: #0a7c5f;
+  --live-soft: #e2f3ec;
   --warn: #9a5b00;
   --warn-soft: #fdf0d9;
   --stop: #a32020;
   --stop-soft: #fbe9e9;
-  --r: 12px;
-  --r-sm: 9px;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --well: #ffffff;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #0c1015;
-    --surface: #161b22;
-    --surface-2: #1c222b;
-    --raise: 0 1px 2px rgba(0, 0, 0, .5);
-    --raise-lg: 0 2px 6px rgba(0, 0, 0, .5), 0 18px 40px rgba(0, 0, 0, .45);
-    --ink: #f2f5f9;
-    --ink-2: #aab4c2;
-    --ink-3: #7c8797;
-    --line: #2a323d;
-    --line-2: #222932;
-    --brand: #3ec18f;
-    --brand-ink: #06251b;
-    --brand-soft: #16302a;
-    --warn: #e0a44a;
-    --warn-soft: #33280f;
-    --stop: #f08b85;
-    --stop-soft: #351a1a;
+:root[data-theme="warm"] {
+  --ground: #f4ece0;
+  --surface: #fbf5eb;
+  --surface-2: #f8f1e5;
+  --ink: #2e2820;
+  --ink-2: #574d40;
+  --ink-3: #7d7060;
+  --line: #e2d5c0;
+  --line-2: #efe5d6;
+  --raise: 0 1px 2px rgba(80, 55, 25, .07), 0 4px 14px rgba(80, 55, 25, .09);
+  --raise-lg: 0 2px 6px rgba(80, 55, 25, .1), 0 18px 40px rgba(80, 55, 25, .16);
+  --brand: #c07818;
+  --brand-ink: #241800;
+  --brand-soft: #f6e4d0;
+  --live: #5d7a2c;
+  --live-soft: #eaf0da;
+  --warn: #96520f;
+  --warn-soft: #f7e7cf;
+  --stop: #9e3b1c;
+  --stop-soft: #f7ded4;
+  --well: #fdf9f2;
+  color-scheme: light;
+}
+
+:root[data-theme="dim"] {
+  --ground: #3a352e;
+  --surface: #443e36;
+  --surface-2: #3f3931;
+  --ink: #f0e9dd;
+  --ink-2: #cabfae;
+  --ink-3: #a2978a;
+  --line: #564e43;
+  --line-2: #4a443b;
+  --raise: 0 1px 2px rgba(0, 0, 0, .22), 0 4px 14px rgba(0, 0, 0, .22);
+  --raise-lg: 0 2px 6px rgba(0, 0, 0, .3), 0 18px 40px rgba(0, 0, 0, .35);
+  --brand: #f0b464;
+  --brand-ink: #2a2015;
+  --brand-soft: rgba(240, 180, 100, .18);
+  --live: #9dc470;
+  --live-soft: rgba(157, 196, 112, .16);
+  --warn: #e8b06a;
+  --warn-soft: rgba(232, 176, 106, .16);
+  --stop: #e08a6a;
+  --stop-soft: rgba(224, 138, 106, .18);
+  --well: #efe9df;
+  color-scheme: dark;
+}
+
+/* Opened in its own window there is no stamp and no till to ask, so the OS
+   decides. Guarded on :not([data-theme]) so it never overrides a real choice. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --ground: #eef0f4;
+    --surface: #ffffff;
+    --surface-2: #f6f7fa;
+    --ink: #10151c;
+    --ink-2: #46505e;
+    --ink-3: #77808f;
+    --line: #dfe3ea;
+    --line-2: #eceff4;
+    --raise: 0 1px 2px rgba(13, 21, 34, .06), 0 4px 14px rgba(13, 21, 34, .05);
+    --raise-lg: 0 2px 6px rgba(13, 21, 34, .08), 0 18px 40px rgba(13, 21, 34, .1);
+    --brand: #f0a500;
+    --brand-ink: #2b2000;
+    --brand-soft: #fdf1d6;
+    --live: #0a7c5f;
+    --live-soft: #e2f3ec;
+    --warn: #9a5b00;
+    --warn-soft: #fdf0d9;
+    --stop: #a32020;
+    --stop-soft: #fbe9e9;
+    --well: #ffffff;
+    color-scheme: light;
   }
 }
 
@@ -205,6 +312,98 @@ td.num, .quantity-input-content input { font-family: var(--mono); font-variant-n
    shortfall and must be unmissable; positive is fine but not celebratory. */
 .variance-value.negative, .variance-value[data-negative="true"] { color: var(--stop); font-weight: 700; }
 .variance-value.positive { color: var(--brand); }
+
+/* ---------- the fixed pale fills ----------
+   Everything below is painted in literal hex by the inline <style>, with no
+   dark variant — a pale mint or a pale pink that stays pale whatever palette is
+   active, under themed near-white ink. That is unreadable in four of the five
+   themes. Each carries a modifier class, so it out-specifies the single-class
+   rules above and has to be named here rather than inherited. */
+
+.status.in_progress, .alert.warning, .variance-item.neutral {
+  background: var(--warn-soft); color: var(--warn); border-color: var(--warn);
+}
+.status.completed, .alert.success, .variance-item.positive, .serial-status.found {
+  background: var(--live-soft); color: var(--live); border-color: var(--live);
+}
+.status.cancelled, .alert.error, .variance-item.negative, .serial-status.missing {
+  background: var(--stop-soft); color: var(--stop); border-color: var(--stop);
+}
+.alert.info { background: var(--brand-soft); color: var(--ink); border-color: var(--brand); }
+
+/* Serialised / non-serialised were a pale blue and a pale lilac carrying no
+   meaning either colour communicates. They become weight, not hue. */
+.badge.serialised, .serial-badge.yes { background: var(--brand-soft); color: var(--ink); }
+.badge.non_serialised, .serial-badge.no { background: var(--surface-2); color: var(--ink-3); }
+.dropdown-item-sku { background: var(--surface-2); color: var(--ink-2); }
+
+/* Wells, stripes and hovers. */
+.serial-list, .tabs, .inventory-summary-header, .label-mode-btn { background: var(--surface-2); }
+.report-table tbody tr:nth-child(even) { background: var(--surface-2); }
+.po-result:hover, .inventory-summary-header:hover,
+.inventory-table tr:hover, .serial-selection-item:hover { background: var(--surface-2); }
+.scanned-item-row:hover { background: var(--surface-2) !important; }
+.scanned-item-row:active { background: var(--brand-soft) !important; }
+.serial-selection-item.selected { background: var(--brand-soft); border-color: var(--brand); }
+.spinner { border-color: var(--line); border-top-color: var(--brand); }
+
+/* Borders drawn in #e2e8f0 disappear against a light panel and glare against a
+   dark one. One token, both problems. */
+.input-group input, .input-group select, .input-group textarea,
+.stocktake-item, .po-result, .inventory-summary, .serial-selection-item,
+.labels-table th, .labels-table td, .report-table th, .report-table td,
+.inventory-table th, .inventory-table td,
+.item-row, .serial-item, .dropdown-item, .report-summary-table td {
+  border-color: var(--line);
+}
+
+#scannedItemsList { scrollbar-color: var(--ink-3) var(--surface-2); }
+#scannedItemsList::-webkit-scrollbar-track { background: var(--surface-2); }
+#scannedItemsList::-webkit-scrollbar-thumb { background: var(--ink-3); }
+
+/* ---------- the fixed text colours ----------
+   35 literal `color:` declarations in the inline <style>, almost all #333 for
+   headings and #666 for secondary text. Both are near-black, so on any of the
+   three dark palettes they are all but invisible against the panel. Mapped to
+   the two ink tones rather than left to chance. */
+
+.card h2, .stocktake-item h3, .item-title, .dropdown-item-name,
+.quantity-input-content h3, .serial-number { color: var(--ink); }
+
+/* --ink-2, not --ink-3: these are sentences a person reads, and the muted tone
+   measures 3.04:1 on the default purple surface. --ink-3 stays for labels and
+   metadata, where it belongs. */
+.stocktake-item p, .loading, .muted, .dropdown-item-details,
+.report-summary-table td:first-child { color: var(--ink-2); }
+
+/* ---------- inline colours ----------
+   52 `color:` declarations sit in style attributes written by the tool's own
+   JavaScript — mostly #666 on empty-state messages. An inline style outranks
+   every selector, so these are the one place the theme has to raise
+   !important; without it the empty states stay near-black on a dark panel at
+   1.26:1. Matching on the attribute keeps the promise that this file never
+   edits the tool: delete it and the inline colours simply apply again. */
+[style*="color: #666"], [style*="color:#666"],
+[style*="color: #999"], [style*="color:#999"],
+[style*="color: #718096"], [style*="color: #a0aec0"],
+[style*="color: #4a5568"] { color: var(--ink-2) !important; }
+[style*="color: #333"], [style*="color:#333"] { color: var(--ink) !important; }
+[style*="color: #c53030"] { color: var(--stop) !important; }
+[style*="color: #38a169"], [style*="color: #2f855a"] { color: var(--live) !important; }
+[style*="color: #856404"] { color: var(--warn) !important; }
+[style*="color: #667eea"] { color: var(--brand) !important; }
+
+/* The inactive tabs kept a hardcoded #e2e8f0 pill behind themed ink — light
+   grey under light grey, 1.2:1 in the dark palettes. The rail already carries
+   the surface, so the pill only needs to appear on hover and when selected. */
+.tab { background: transparent; }
+.tab:hover { background: var(--line-2); color: var(--ink); }
+
+/* White text is only ever safe on the brand fill, and only because the brand
+   ink is near-black there. Everywhere else it is white-on-light. */
+.stat-box, .button, .dropdown-item.active .dropdown-item-details,
+.dropdown-item.active .dropdown-item-sku { color: var(--ink); }
+.label-mode-btn.active, .dropdown-item.active { color: var(--brand-ink); }
 
 /* ---------- tabs ---------- */
 

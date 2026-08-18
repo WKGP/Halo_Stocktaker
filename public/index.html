@@ -840,8 +840,26 @@
          Remove this one line to restore the original appearance. -->
     <link rel="stylesheet" href="cachedup-theme.css">
     <script>/* cachedup-embed-detect */
-      // Lets the Cached Up theme drop chrome the host already provides.
-      if (window.top !== window.self) document.documentElement.classList.add("is-embedded");
+      /* Palette, and the chrome the host already provides.
+       *
+       * The till passes its resolved palette as ?theme= and re-sends it by
+       * postMessage when the operator changes it. A cross-origin frame cannot
+       * read the host's <html>, so without this it guessed from
+       * prefers-color-scheme and could sit in the opposite mode to the till.
+       *
+       * The message is not origin-checked because it cannot carry anything:
+       * the value must be one of five literals or it is ignored. */
+      (function () {
+        var root = document.documentElement;
+        function stamp(t) {
+          if (/^(default|dark|light|warm|dim)$/.test(t || "")) root.setAttribute("data-theme", t);
+        }
+        stamp(new URLSearchParams(location.search).get("theme"));
+        addEventListener("message", function (e) {
+          if (e.data && e.data.type === "cachedup:theme") stamp(e.data.theme);
+        });
+        if (window.top !== window.self) root.classList.add("is-embedded");
+      })();
     </script>
 </head>
 <body>

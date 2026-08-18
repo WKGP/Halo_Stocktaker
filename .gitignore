@@ -3,8 +3,10 @@ node_modules/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+# Every .env variant, not just the bare name. Timestamped backups such as
+# .env.bak-064837 hold a live Halo client secret and were not covered.
+.env.*
+!.env.example
 
 # Data directory
 data/
